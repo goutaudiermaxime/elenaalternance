@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Recherche Alternance Elena - Tableau de bord</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f9f9f9; }
+  header { background: #004080; color: white; padding: 1em; text-align: center; }
+  nav { background: #0066cc; color: white; padding: 0.5em; display: flex; justify-content: center; gap: 1em; }
+  nav button { background: #005bb5; border: none; color: white; padding: 0.5em 1em; cursor: pointer; font-weight: bold; }
+  nav button.active, nav button:hover { background: #003f7f; }
+  main { padding: 1em; max-width: 900px; margin: auto;}
+  table { border-collapse: collapse; width: 100%; background: white; }
+  th, td { border: 1px solid #ddd; padding: 0.5em; text-align: left; }
+  th { background: #004080; color: white; }
+  tr:hover { background: #eee; }
+  .priority-1 { background: #ffa0a0; } /* rouge clair */
+  .priority-2 { background: #ffd4a0; } /* orange clair */
+  .priority-3 { background: #a0c4ff; } /* bleu clair */
+  .status-badge { padding: 0.2em 0.5em; border-radius: 4px; color: white; font-weight: bold; font-size: 0.9em; }
+  .status-priority1 { background: #d80000; }
+  .status-priority2 { background: #e07b00; }
+  .status-priority3 { background: #1164d4; }
+  .flex-row { display: flex; gap: 1em; flex-wrap: wrap; align-items: center; }
+  label { font-weight: bold; }
+  input, select, textarea { width: 100%; padding: 0.3em; margin-top: 0.2em; }
+  textarea { resize: vertical; }
+  .form-group { flex: 1 1 250px; margin-bottom: 1em; }
+  button.primary { background: #004080; color: white; border: none; padding: 0.5em 1em; cursor: pointer; border-radius: 4px; font-size: 1em; }
+  button.danger { background: #d80000; color: white; border: none; padding: 0.3em 0.6em; cursor: pointer; border-radius: 4px; }
+  footer { text-align: center; font-size: 0.8em; color: #666; margin-top: 2em; padding: 1em; border-top: 1px solid #ccc; }
+  .hidden { display: none; }
+  .stats { display: flex; gap: 1em; flex-wrap: wrap; margin-bottom: 1em; }
+  .stat-box { background: white; padding: 1em; border: 1px solid #ccc; border-radius: 6px; flex: 1 1 120px; text-align: center; }
+  .stat-box h3 { margin: 0 0 0.5em 0; color: #004080; }
+  .textarea-note { height: 80px; }
+  #fileInput { display:none; }
+  .btn-secondary {
+    background: #0073e6; 
+    color: white; 
+    border: none; 
+    padding: 0.5em 1em; 
+    cursor: pointer; 
+    border-radius: 4px;
+    margin-left: 0.5em;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Recherche d'alternance d'Elena - BTS Électrotechnique</h1>
+  <div>Bureau d’études - Secteur Annecy / Poisy</div>
+</header>
+<nav>
+  <button id="nav-dashboard" class="active">Tableau de bord</button>
+  <button id="nav-entreprises">Entreprises</button>
+  <button id="nav-scripts">Script d'appel</button>
+  <button id="nav-documents">Documents</button>
+  <button id="nav-notes">Notes</button>
+</nav>
+<main>
+  <!-- Dashboard -->
+  <section id="dashboard-section">
+    <h2>Statistiques globales</h2>
+    <div class="stats">
+      <div class="stat-box"><h3 id="stat-total">0</h3>Entreprises identifiées</div>
+      <div class="stat-box"><h3 id="stat-called">0</h3>Entreprises appelées</div>
+      <div class="stat-box"><h3 id="stat-cv-sent">0</h3>CV envoyés</div>
+      <div class="stat-box"><h3 id="stat-pending">0</h3>En attente de réponse</div>
+      <div class="stat-box"><h3 id="stat-followup">0</h3>Relances à faire</div>
+      <div class="stat-box"><h3 id="stat-interviews">0</h3>Entretiens</div>
+      <div class="stat-box"><h3 id="stat-accepted">0</h3>Alternances obtenues</div>
+      <div class="stat-box"><h3 id="stat-refused">0</h3>Refus reçus</div>
+    </div>
+  </section>
+
+  <!-- Entreprises -->
+  <section id="entreprises-section" class="hidden">
+    <h2>Liste des entreprises</h2>
+    <button class="primary" id="btn-add-company">Ajouter une entreprise</button>
+    <button id="btn-export-json" class="btn-secondary">Exporter JSON</button>
+    <button id="btn-import-json" class="btn-secondary">Importer JSON</button>
+    <input type="file" id="fileInput" accept=".json" />
+    <table id="company-table">
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Ville</th>
+          <th>Distance (min)</th>
+          <th>Type</th>
+          <th>Priorité</th>
+          <th>Statut</th>
+          <th>Contact</th>
+          <th>Dernière action</th>
+          <th>Prochaine action</th>
+          <th>Notes</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <!-- Formulaire ajout/modif -->
+    <div id="company-form-container" class="hidden">
+      <h3 id="form-title">Ajouter une entreprise</h3>
+      <form id="company-form">
+        <div class="flex-row">
+          <div class="form-group">
+            <label for="name">Nom de l’entreprise</label>
+            <input type="text" id="name" required />
+          </div>
+          <div class="form-group">
+            <label for="city">Ville</label>
+            <input type="text" id="city" />
+          </div>
+        </div>
+        <div class="flex-row">
+          <div class="form-group">
+            <label for="distance">Distance (minutes depuis Poisy)</label>
+            <input type="number" step="1" id="distance" />
+          </div>
+          <div class="form-group">
+            <label for="type">Type d’entreprise</label>
+            <input type="text" id="type" />
+          </div>
+        </div>
+        <div class="flex-row">
+          <div class="form-group">
+            <label for="priority">Priorité</label>
+            <select id="priority">
+              <option value="1">🔴 Priorité 1</option>
+              <option value="2">🟠 Priorité 2</option>
+              <option value="3" selected>🔵 Priorité 3</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="status">Statut</label>
+            <select id="status">
+              <option>À appeler</option>
+              <option>Appelé</option>
+              <option>CV envoyé</option>
+              <option>En attente</option>
+              <option>Relance</option>
+              <option>Entretien</option>
+              <option>Refus</option>
+              <option>Accepté</option>
+            </select>
+          </div>
+        </div>
+        <div class="flex-row">
+          <div class="form-group">
+            <label for="contact">Contact (tel/email)</label>
+            <input type="text" id="contact" />
+          </div>
+          <div class="form-group">
+            <label for="lastAction">Dernière action (date et résumé)</label>
+            <input type="text" id="lastAction" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="nextAction">Prochaine action (date et résumé)</label>
+          <input type="text" id="nextAction" />
+        </div>
+        <div class="form-group">
+          <label for="notes">Notes</label>
+          <textarea id="notes" class="textarea-note"></textarea>
+        </div>
+        <button type="submit" class="primary">Enregistrer</button>
+        <button type="button" id="btn-cancel" class="btn-secondary">Annuler</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- Script d'appel -->
+  <section id="scripts-section" class="hidden">
+    <h2>Script téléphonique de base</h2>
+    <p><strong>Présentation courte :</strong></p>
+    <p>Bonjour, je me permets de vous appeler au sujet d’une recherche d’alternance en BTS Électrotechnique. Je recherche pour ma compagne Elena une entreprise qui pourrait l’accueillir, idéalement sur des missions liées au bureau d’études électrique : conception de schémas, études, éventuellement dimensionnement et suivi de chantier. Est-ce que je pourrais échanger avec la personne qui s’occupe du recrutement ou de la partie bureau d’études ?</p>
+    <p><strong>Questions à poser :</strong></p>
+    <ul>
+      <li>Prenez-vous actuellement des alternants en BTS Électrotechnique ?</li>
+      <li>Avez-vous un bureau d’études électrique ?</li>
+      <li>Les alternants travaillent-ils sur les schémas électriques ?</li>
+      <li>Faites-vous des études industrielles, tertiaires ou les deux ?</li>
+      <li>Utilisez-vous des logiciels de conception électrique ?</li>
+      <li>L’alternante pourrait-elle participer à des études ?</li>
+      <li>Y a-t-il une personne pouvant l’accompagner/tutorer ?</li>
+      <li>Quand faudrait-il envoyer le CV ?</li>
+      <li>À qui faut-il l’adresser ?</li>
+      <li>Quand pouvons-nous vous recontacter ?</li>
+    </ul>
+    <p><strong>Si refus :</strong></p>
+    <p>Je comprends, merci beaucoup. Est-ce que vous auriez éventuellement connaissance d’une entreprise de votre secteur qui recherche actuellement un alternant en électrotechnique ?</p>
+  </section>
+
+  <!-- Documents -->
+  <section id="documents-section" class="hidden">
+    <h2>Documents à Centraliser</h2>
+    <ul>
+      <li>CV Elena (ajouter manuellement)</li>
+      <li>Lettre de motivation</li>
+      <li>Convention / documents école</li>
+      <li>Calendrier scolaire</li>
+      <li>Scripts d’appels</li>
+    </ul>
+    <p>Tu peux ajouter ici tes fichiers ou utiliser un système externe (Drive, OneDrive) et mettre les liens.</p>
+  </section>
+
+  <!-- Notes -->
+  <section id="notes-section" class="hidden">
+    <h2>Notes partagées</h2>
+    <textarea id="shared-notes" style="width:100%; height:200px;" placeholder="Écrire des notes, idées, retours d’appels..."></textarea>
+    <button id="btn-save-notes" class="primary" style="margin-top:0.5em;">Sauvegarder</button>
+  </section>
+</main>
+
+<footer>
+  Créé pour Maxime & Elena – Gestion simple de la recherche d’alternance
+</footer>
+
+<script>
+  // Gestion navigation
+  const sections = {
+    dashboard: document.getElementById('dashboard-section'),
+    entreprises: document.getElementById('entreprises-section'),
+    scripts: document.getElementById('scripts-section'),
+    documents: document.getElementById('documents-section'),
+    notes: document.getElementById('notes-section'),
+  };
+  const navButtons = {
+    dashboard: document.getElementById('nav-dashboard'),
+    entreprises: document.getElementById('nav-entreprises'),
+    scripts: document.getElementById('nav-scripts'),
+    documents: document.getElementById('nav-documents'),
+    notes: document.getElementById('nav-notes'),
+  };
+
+  function showSection(name) {
+    for (let key in sections) {
+      sections[key].classList.add('hidden');
+      navButtons[key].classList.remove('active');
+    }
+    sections[name].classList.remove('hidden');
+    navButtons[name].classList.add('active');
+  }
+  // Par défaut
+  showSection('dashboard');
+
+  for (const key in navButtons) {
+    navButtons[key].addEventListener('click', () => showSection(key));
+  }
+
+  // Gestion des données entreprises dans localStorage
+  const STORAGE_KEY = 'alternance-enterprises-v1';
+
+  let companies = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+
+  // UI elements
+  const tbody = document.querySelector('#company-table tbody');
+  const formContainer = document.getElementById('company-form-container');
+  const companyForm = document.getElementById('company-form');
+  const btnAddCompany = document.getElementById('btn-add-company');
+  const btnCancel = document.getElementById('btn-cancel');
+
+  let editIndex = null;
+
+  function saveCompanies() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(companies));
+    updateStats();
+  }
+
+  function updateStats() {
+    document.getElementById('stat-total').textContent = companies.length;
+    document.getElementById('stat-called').textContent = companies.filter(c => c.status === 'Appelé').length;
+    document.getElementById('stat-cv-sent').textContent = companies.filter(c => c.status === 'CV envoyé').length;
+    document.getElementById('stat-pending').textContent = companies.filter(c => c.status === 'En attente').length;
+    document.getElementById('stat-followup').textContent = companies.filter(c => c.status === 'Relance').length;
+    document.getElementById('stat-interviews').textContent = companies.filter(c => c.status === 'Entretien').length;
+    document.getElementById('stat-accepted').textContent = companies.filter(c => c.status === 'Accepté').length;
+    document.getElementById('stat-refused').textContent = companies.filter(c => c.status === 'Refus').length;
+  }
+
+  function getPriorityClass(priority) {
+    if (priority === '1') return 'priority-1';
+    if (priority === '2') return 'priority-2';
+    return 'priority-3';
+  }
+
+  function renderCompanies() {
+    tbody.innerHTML = '';
+    companies.forEach((c, idx) => {
+      const tr = document.createElement('tr');
+      tr.classList.add(getPriorityClass(c.priority));
+      tr.innerHTML = `
+        <td>${c.name}</td>
+        <td>${c.city || ''}</td>
+        <td>${c.distance || ''}</td>
+        <td>${c.type || ''}</td>
+        <td>${c.priority}</td>
+        <td><span class="status-badge status-priority${c.priority}">${c.status}</span></td>
+        <td>${c.contact || ''}</td>
+        <td>${c.lastAction || ''}</td>
+        <td>${c.nextAction || ''}</td>
+        <td>${c.notes || ''}</td>
+        <td>
+          <button data-idx="${idx}" class="btn-edit">✏️</button>
+          <button data-idx="${idx}" class="btn-delete danger">🗑️</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    document.querySelectorAll('.btn-edit').forEach(btn =>
+      btn.addEventListener('click', e => {
+        editIndex = parseInt(e.target.dataset.idx);
+        const c = companies[editIndex];
+        fillForm(c);
+        formContainer.classList.remove('hidden');
+        window.scrollTo(0, formContainer.offsetTop);
+        document.getElementById('form-title').textContent = 'Modifier une entreprise';
+      })
+    );
+
+    document.querySelectorAll('.btn-delete').forEach(btn =>
+      btn.addEventListener('click', e => {
+        if (confirm('Supprimer cette entreprise ?')) {
+          const index = parseInt(e.target.dataset.idx);
+          companies.splice(index, 1);
+          saveCompanies();
+          renderCompanies();
+        }
+      })
+    );
+  }
+
+  function fillForm(company) {
+    companyForm.name.value = company.name;
+    companyForm.city.value = company.city || '';
+    companyForm.distance.value = company.distance || '';
+    companyForm.type.value = company.type || '';
+    companyForm.priority.value = company.priority || '3';
+    companyForm.status.value = company.status || 'À appeler';
+    companyForm.contact.value = company.contact || '';
+    companyForm.lastAction.value = company.lastAction || '';
+    companyForm.nextAction.value = company.nextAction || '';
+    companyForm.notes.value = company.notes || '';
+  }
+  function resetForm() {
+    companyForm.reset();
+    editIndex = null;
+    document.getElementById('form-title').textContent = 'Ajouter une entreprise';
+  }
+
+  btnAddCompany.addEventListener('click', () => {
+    resetForm();
+    formContainer.classList.remove('hidden');
+    window.scrollTo(0, formContainer.offsetTop);
+  });
+  btnCancel.addEventListener('click', () => {
+    formContainer.classList.add('hidden');
+  });
+
+  companyForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const newCompany = {
+      name: companyForm.name.value.trim(),
+      city: companyForm.city.value.trim(),
+      distance: companyForm.distance.value.trim(),
+      type: companyForm.type.value.trim(),
+      priority: companyForm.priority.value,
+      status: companyForm.status.value,
+      contact: companyForm.contact.value.trim(),
+      lastAction: companyForm.lastAction.value.trim(),
+      nextAction: companyForm.nextAction.value.trim(),
+      notes: companyForm.notes.value.trim(),
+    };
+    if (editIndex !== null) {
+      companies[editIndex] = newCompany;
+    } else {
+      companies.push(newCompany);
+    }
+    saveCompanies();
+    renderCompanies();
+    formContainer.classList.add('hidden');
+  });
+
+  // Export/Import JSON
+  const btnExportJson = document.getElementById('btn-export-json');
+  const btnImportJson = document.getElementById('btn-import-json');
+  const fileInput = document.getElementById('fileInput');
+
+  btnExportJson.addEventListener('click', () => {
+    const dataStr = JSON.stringify(companies, null, 2);
+    const blob = new Blob([dataStr], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'alternance_companies.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  btnImportJson.addEventListener('click', () => {
+    fileInput.click();
+  });
+
+  fileInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (Array.isArray(data)) {
+          companies = data;
+          saveCompanies();
+          renderCompanies();
+          alert('Importation réussie !');
+        } else {
+          alert('Format JSON invalide.');
+        }
+      } catch (err) {
+        alert('Erreur de lecture du fichier JSON.');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
+
+  // Notes partagées
+  const sharedNotes = document.getElementById('shared-notes');
+  const btnSaveNotes = document.getElementById('btn-save-notes');
+  const NOTES_KEY = 'alternance-shared-notes-v1';
+
+  sharedNotes.value = localStorage.getItem(NOTES_KEY) || '';
+  btnSaveNotes.addEventListener('click', () => {
+    localStorage.setItem(NOTES_KEY, sharedNotes.value);
+    alert('Notes sauvegardées localement');
+  });
+
+  // Initial render
+  renderCompanies();
+  updateStats();
+
+</script>
+</body>
+</html>
